@@ -11,7 +11,6 @@ module Edgar.Init
   where
 
 import           ClassyPrelude
-import           Hasql.Connection
 import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Hasql.Query
@@ -19,13 +18,15 @@ import           Hasql.Session
 import           Options.Applicative
 import Options.Applicative.Helper
 
+import Edgar.Common
+
 
 initDb :: Config -> IO ()
 initDb Config{..} = do
   c <- connectTo psql
   run (query () initQ) c >>= \case
     Left e  -> error $ show e
-    Right _ -> return ()
+    Right _ -> putStrLn "Forms table created."
 
 -- Database
 initQ :: Query () ()
@@ -43,10 +44,6 @@ initQ = statement sql encoder decoder True
     encoder = E.unit
     decoder = D.unit
 
-connectTo :: ByteString -> IO Connection
-connectTo b = acquire b >>= \case
-  Left e  -> error "Unable to connect to database"
-  Right c -> return c
 
 -- Config
 data Config = Config

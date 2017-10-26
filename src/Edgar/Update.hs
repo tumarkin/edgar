@@ -19,13 +19,14 @@ import           Data.Csv hiding (header)
 import           Data.Functor.Contravariant
 import           Data.Time.Calendar
 import           Data.Time.Format
-import           Hasql.Connection
 import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
+
+import Edgar.Common
 
 
 updateDbWithIndex :: Config -> IO ()
@@ -72,11 +73,6 @@ insertQ = statement sql encoder decoder True
            <> contramap dateFiled (E.value E.date)
            <> contramap filename (E.value E.text)
     decoder = D.unit
-
-connectTo :: ByteString -> IO Connection
-connectTo b = acquire b >>= \case
-  Left e  -> error "Unable to connect to database"
-  Right c -> return c
 
 
 
