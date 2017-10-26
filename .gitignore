@@ -1,3 +1,6 @@
+l-dev
+**/*.o
+**/*.hi
 dist
 dist-*
 cabal-dev
@@ -11,10 +14,15 @@ cabal-dev
 .hsenv
 .cabal-sandbox/
 cabal.sandbox.config
+dist/
 *.prof
 *.aux
 *.hp
 *.eventlog
+*.swp
+**/*.swp
+.DS_Store
+TODO.md
 .stack-work/
 cabal.project.local
 .HTF/
