@@ -18,11 +18,14 @@ library
   exposed-modules:     Edgar.Update
                      , Edgar.Init
                      , Edgar.Common
+                     , Edgar.Download
   build-depends:       base >= 4.7 && < 5
                      , classy-prelude
                      , cassava
                      , contravariant
                      , bytestring
+                     , directory
+                     , filepath
                      , hasql
                      , http-conduit
                      , mtl

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -17,8 +16,6 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Char                  (ord)
 import           Data.Csv hiding (header)
 import           Data.Functor.Contravariant
-import           Data.Time.Calendar
-import           Data.Time.Format
 import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Hasql.Query
@@ -64,43 +61,17 @@ insertEdgarForm c ef = run (query ef insertQ) c >>= \case
   Right _ -> return ()
 
 insertQ :: Query EdgarForm ()
-insertQ = statement sql encoder decoder True
+insertQ = statement sql encodeEdgarForm D.unit True
   where
     sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3, $4, $5)"
-    encoder = contramap cik (E.value E.text)
-           <> contramap companyName (E.value E.text)
-           <> contramap formType (E.value E.text)
-           <> contramap dateFiled (E.value E.date)
-           <> contramap filename (E.value E.text)
-    decoder = D.unit
 
-
-
-data EdgarForm = EdgarForm
-  { cik         :: !Text
-  , companyName :: !Text
-  , formType    :: !Text
-  , dateFiled   :: !Day
-  , filename    :: !Text
-  } deriving (Generic, Show)
-
-instance FromRecord EdgarForm
-instance ToRecord   EdgarForm
-
-instance ToField Day where
-  toField = error "Day is not intended to be converted to a CSV field"
-
-instance FromField Day where
-  -- parseField :: ByteString -> Parser Day
-  parseField = parseTimeM True defaultTimeLocale "%Y-%m-%d" . L8.unpack . L8.fromStrict
-
-type Year = Int
+type Year    = Int
 type Quarter = Int
 
 -- Config
 data Config = Config
-  { year :: !Int
-  , qtr :: !Int
+  { year :: !Year
+  , qtr :: !Quarter
   , psql :: !ByteString
   }
 
