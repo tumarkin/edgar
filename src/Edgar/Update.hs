@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE RankNTypes   #-}
 
 module Edgar.Update
   ( updateDbWithIndex
@@ -11,31 +12,76 @@ module Edgar.Update
   where
 
 import           ClassyPrelude
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy.Char8 as L8
-import           Data.Char                  (ord)
-import           Data.Csv hiding (header)
+import           Control.Monad.Trans.Resource
+import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Lazy.Char8   as L8
+import           Data.Char                    (ord)
+import           Data.Conduit                 (Conduit, Producer, Consumer, (.|))
+import qualified Data.Conduit                 as C
+import qualified Data.Conduit.Binary          as C
+import qualified Data.Conduit.Zlib            as C
+import           Data.Csv                     hiding (header)
 import           Data.Functor.Contravariant
-import qualified Hasql.Decoders             as D
-import qualified Hasql.Encoders             as E
+import qualified Hasql.Decoders               as D
+import qualified Hasql.Encoders               as E
 import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
 
-import Edgar.Common
+import           Edgar.Common
+
+
 
 
 updateDbWithIndex :: Config -> IO ()
-updateDbWithIndex Config{..} = do
-  i <- downloadIndex (year, qtr)
-  let efs = case toEdgarForms i of
-              Left e  -> error e
-              Right r -> r
+updateDbWithIndex c@ Config{..} = do
+  conn <- connectTo psql
+  runResourceT $  C.runConduit (myConduit c conn)
 
-  c <- connectTo psql
 
-  mapM_ (insertEdgarForm c) efs 
+myConduit :: Config -> Connection -> C.ConduitM a c (ResourceT IO) ()
+myConduit c@Config{..} conn
+    =  indexSourceC c
+    .| C.ungzip
+    .| C.lines
+    .| dropHeaderC
+    .| lazifyBSC
+    .| toEdgarFormC
+    .| storeFormC conn
+
+
+indexSourceC :: Config -> C.Producer (ResourceT IO) ByteString
+indexSourceC Config{..} =
+    httpSource url getResponseBody
+  where
+    url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show year <> "/QTR" <> show qtr <> "/master.gz"
+
+
+dropHeaderC :: Conduit ByteString (ResourceT IO) ByteString
+dropHeaderC = ignoreC 11
+
+ignoreC :: Int -> Conduit ByteString (ResourceT IO) ByteString
+ignoreC 0 = C.awaitForever C.yield
+ignoreC i = do
+    C.await >>= \case
+      Nothing -> return ()
+      Just _  -> ignoreC (i-1)
+
+
+lazifyBSC :: Conduit ByteString (ResourceT IO) L8.ByteString
+lazifyBSC = C.awaitForever $ C.yield . L8.fromStrict
+
+toEdgarFormC :: Conduit L8.ByteString (ResourceT IO) EdgarForm
+toEdgarFormC = C.awaitForever $ C.yield . toEdgarForm
+
+storeFormC :: Connection -> Consumer EdgarForm (ResourceT IO) ()
+storeFormC conn = C.awaitForever $ \ef -> liftIO (insertEdgarForm conn ef)
+
+
+
+
+
 
 
 
@@ -43,6 +89,13 @@ toEdgarForms :: L8.ByteString -> Either String (Vector EdgarForm)
 toEdgarForms = decodeWith pipeDelimited NoHeader . dropHeader
   where
     dropHeader = L8.unlines . unsafeDrop 11 . L8.lines
+
+toEdgarForm :: L8.ByteString -> EdgarForm
+toEdgarForm b = 
+  case decodeWith pipeDelimited NoHeader b of
+    Left e  -> error e
+    Right r -> unsafeHead r
+
 
 pipeDelimited :: DecodeOptions
 pipeDelimited =
@@ -71,7 +124,7 @@ type Quarter = Int
 -- Config
 data Config = Config
   { year :: !Year
-  , qtr :: !Quarter
+  , qtr  :: !Quarter
   , psql :: !ByteString
   }
 

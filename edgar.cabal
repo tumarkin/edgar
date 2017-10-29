@@ -23,6 +23,9 @@ library
                      , classy-prelude
                      , cassava
                      , contravariant
+                     , conduit
+                     , conduit-extra
+                     -- , csv-conduit
                      , bytestring
                      , directory
                      , filepath
@@ -31,6 +34,7 @@ library
                      , mtl
                      , optparse-applicative
                      , optparse-helper
+                     , resourcet
                      , text
                      , time
 
