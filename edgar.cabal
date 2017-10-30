@@ -25,12 +25,12 @@ library
                      , contravariant
                      , conduit
                      , conduit-extra
-                     -- , csv-conduit
                      , bytestring
                      , directory
                      , filepath
                      , hasql
                      , http-conduit
+                     , lens
                      , mtl
                      , optparse-applicative
                      , optparse-helper

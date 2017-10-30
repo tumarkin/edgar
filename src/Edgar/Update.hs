@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE RankNTypes   #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE FlexibleContexts   #-}
 
 module Edgar.Update
   ( updateDbWithIndex
@@ -13,6 +15,7 @@ module Edgar.Update
 
 import           ClassyPrelude
 import           Control.Monad.Trans.Resource
+import           Control.Monad.State.Strict
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Lazy.Char8   as L8
 import           Data.Char                    (ord)
@@ -28,19 +31,43 @@ import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
+import Control.Lens (makeLenses)
+import Control.Lens.Setter ((+=))
 
 import           Edgar.Common
 
 
+-- Types
+type UpdateM = StateT FormCounter (ResourceT IO)
 
+data FormCounter = FormCounter 
+  { _inserted  :: !Int
+  , _malformed :: !Int
+  , _duplicate :: !Int
+  } deriving (Show)
 
+makeLenses ''FormCounter
+
+nullFormCounter :: FormCounter
+nullFormCounter = FormCounter 0 0 0
+
+type Year    = Int
+type Quarter = Int
+
+-- Application
 updateDbWithIndex :: Config -> IO ()
 updateDbWithIndex c@ Config{..} = do
-  conn <- connectTo psql
-  runResourceT $  C.runConduit (myConduit c conn)
+    conn <- connectTo psql
+    (_, fc) <- runResourceT $  runStateT (C.runConduit (myConduit c conn)) nullFormCounter
+    putStrLn $ finalMsg fc
+  where
+    finalMsg FormCounter{..} = 
+        tshow _inserted <> " new forms inserted into DB" <>
+          if _duplicate > 0 
+          then " (" <> tshow _duplicate <> " known forms found)" 
+          else ""
 
-
-myConduit :: Config -> Connection -> C.ConduitM a c (ResourceT IO) ()
+myConduit :: Config -> Connection -> C.ConduitM a c UpdateM ()
 myConduit c@Config{..} conn
     =  indexSourceC c
     .| C.ungzip
@@ -50,76 +77,66 @@ myConduit c@Config{..} conn
     .| toEdgarFormC
     .| storeFormC conn
 
-
-indexSourceC :: Config -> C.Producer (ResourceT IO) ByteString
+indexSourceC :: Config -> C.Producer UpdateM ByteString
 indexSourceC Config{..} =
     httpSource url getResponseBody
   where
     url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show year <> "/QTR" <> show qtr <> "/master.gz"
 
 
-dropHeaderC :: Conduit ByteString (ResourceT IO) ByteString
+
+dropHeaderC :: Conduit ByteString UpdateM ByteString
 dropHeaderC = ignoreC 11
 
-ignoreC :: Int -> Conduit ByteString (ResourceT IO) ByteString
+ignoreC :: Int -> Conduit ByteString UpdateM ByteString
 ignoreC 0 = C.awaitForever C.yield
-ignoreC i = do
+ignoreC i =
     C.await >>= \case
       Nothing -> return ()
       Just _  -> ignoreC (i-1)
 
 
-lazifyBSC :: Conduit ByteString (ResourceT IO) L8.ByteString
+lazifyBSC :: Conduit ByteString UpdateM L8.ByteString
 lazifyBSC = C.awaitForever $ C.yield . L8.fromStrict
 
-toEdgarFormC :: Conduit L8.ByteString (ResourceT IO) EdgarForm
-toEdgarFormC = C.awaitForever $ C.yield . toEdgarForm
+toEdgarFormC :: (MonadIO m, MonadState FormCounter m) 
+              => Conduit L8.ByteString m EdgarForm
+toEdgarFormC = C.awaitForever $ \bs ->
+    case toEdgarForm bs of
+      Left e   -> do
+                  malformed += 1
+                  liftIO . L8.putStrLn $ "Error reading form: " ++ bs
+      Right ef -> C.yield ef
 
-storeFormC :: Connection -> Consumer EdgarForm (ResourceT IO) ()
-storeFormC conn = C.awaitForever $ \ef -> liftIO (insertEdgarForm conn ef)
+storeFormC :: Connection -> Consumer EdgarForm UpdateM ()
+storeFormC conn = C.awaitForever $ \ef -> insertEdgarForm conn ef
 
 
-
-
-
-
-
-
-toEdgarForms :: L8.ByteString -> Either String (Vector EdgarForm)
-toEdgarForms = decodeWith pipeDelimited NoHeader . dropHeader
-  where
-    dropHeader = L8.unlines . unsafeDrop 11 . L8.lines
-
-toEdgarForm :: L8.ByteString -> EdgarForm
-toEdgarForm b = 
-  case decodeWith pipeDelimited NoHeader b of
-    Left e  -> error e
-    Right r -> unsafeHead r
-
+toEdgarForm :: L8.ByteString -> Either String EdgarForm
+toEdgarForm b = unsafeHead <$> decodeWith pipeDelimited NoHeader b
 
 pipeDelimited :: DecodeOptions
 pipeDelimited =
     defaultDecodeOptions{ decDelimiter = fromIntegral (ord '|')}
 
-downloadIndex :: (MonadThrow m, MonadIO m) => (Year, Quarter) -> m L8.ByteString
-downloadIndex (y, q) =
-    getResponseBody <$> (httpLBS =<< parseRequest url)
-  where
-    url = "https://www.sec.gov/Archives/edgar/full-index/" <> show y <> "/QTR" <> show q <> "/master.idx"
-
 -- Database
-insertEdgarForm :: Connection -> EdgarForm -> IO ()
-insertEdgarForm c ef = run (query ef insertQ) c >>= \case
-  Left e  -> error $ show e
-  Right _ -> return ()
+insertEdgarForm :: (MonadIO m, MonadState FormCounter m) 
+                 => Connection -> EdgarForm -> m ()
+insertEdgarForm c ef = liftIO (run (query ef insertQ) c) >>= \case
+  Left e  -> if isDuplicateError e
+            then duplicate += 1
+            else error $ show e
+  Right _ -> inserted += 1
+
 
 insertQ :: Query EdgarForm ()
 insertQ = statement sql encodeEdgarForm D.unit True
   where
     sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3, $4, $5)"
 
-type Year    = Int
-type Quarter = Int
+isDuplicateError :: Error -> Bool
+isDuplicateError (ResultError (ServerError _ msg _ _)) = "duplicate key value" `isPrefixOf` msg
+isDuplicateError _ = False
 
 -- Config
 data Config = Config
