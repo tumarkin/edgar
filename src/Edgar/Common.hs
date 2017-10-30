@@ -32,7 +32,7 @@ connectTo b = acquire b >>= \case
 
 
 data EdgarForm = EdgarForm
-  { cik         :: !Text
+  { cik         :: !Int64
   , companyName :: !Text
   , formType    :: !Text
   , dateFiled   :: !Day
@@ -49,7 +49,7 @@ instance FromField Day where
   -- parseField :: ByteString -> Parser Day
   parseField = parseTimeM True defaultTimeLocale "%Y-%m-%d" . L8.unpack . L8.fromStrict
 
-encodeEdgarForm = contramap cik (E.value E.text)
+encodeEdgarForm = contramap cik (E.value E.int8)
            <> contramap companyName (E.value E.text)
            <> contramap formType (E.value E.text)
            <> contramap dateFiled (E.value E.date)

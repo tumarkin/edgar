@@ -24,6 +24,10 @@ import Edgar.Common
 initDb :: Config -> IO ()
 initDb Config{..} = do
   c <- connectTo psql
+  run (query () formTypeQ) c >>= \case
+    Left e  -> error $ show e
+    Right _ -> putStrLn "Enumerated form type created."
+
   run (query () initQ) c >>= \case
     Left e  -> error $ show e
     Right _ -> putStrLn "Forms table created."
@@ -34,13 +38,20 @@ initQ = statement sql encoder decoder True
   where
     sql     = "create table forms (" <> 
       "  id             serial primary key," <>
-      "  cik            text," <>
+      "  cik            integer," <>
       "  company_name   text," <>
-      "  form_type      text," <>
+      "  form_type      form_type," <>
       "  date_filed     date," <>
       "  filename       text," <>
       "  unique (cik, company_name, form_type, date_filed, filename)" <>
       "  )"
+    encoder = E.unit
+    decoder = D.unit
+
+formTypeQ :: Query () ()
+formTypeQ = statement sql encoder decoder True
+  where
+    sql     = "create type form_type as enum ()"
     encoder = E.unit
     decoder = D.unit
 

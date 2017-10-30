@@ -23,6 +23,7 @@ library
                      , classy-prelude
                      , cassava
                      , contravariant
+                     , contravariant-extras
                      , conduit
                      , conduit-extra
                      , bytestring

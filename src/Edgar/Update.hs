@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE MultiWayIf   #-}
 
 module Edgar.Update
   ( updateDbWithIndex
@@ -123,20 +124,44 @@ pipeDelimited =
 insertEdgarForm :: (MonadIO m, MonadState FormCounter m) 
                  => Connection -> EdgarForm -> m ()
 insertEdgarForm c ef = liftIO (run (query ef insertQ) c) >>= \case
-  Left e  -> if isDuplicateError e
-            then duplicate += 1
-            else error $ show e
+  Left e -> if | isDuplicateError e -> duplicate += 1
+               | isEnumError e      -> addEnumFormType c (formType ef) >> insertEdgarForm c ef
+               | otherwise          -> error $ show e
   Right _ -> inserted += 1
 
 
 insertQ :: Query EdgarForm ()
 insertQ = statement sql encodeEdgarForm D.unit True
   where
-    sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3, $4, $5)"
+    sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3::form_type, $4, $5)"
 
 isDuplicateError :: Error -> Bool
 isDuplicateError (ResultError (ServerError _ msg _ _)) = "duplicate key value" `isPrefixOf` msg
 isDuplicateError _ = False
+
+isEnumError :: Error -> Bool
+isEnumError (ResultError (ServerError _ msg _ _ )) = "invalid input value for enum" `isPrefixOf` msg
+isEnumError _ = False
+
+addEnumFormType :: MonadIO m 
+                => Connection -> Text -> m ()
+addEnumFormType c t = 
+  liftIO (run (query () (formTypeQ t)) c) >>= \case
+    Left e  -> error $ show e
+    Right _ -> return () -- putStrLn "Forms table created."
+
+
+formTypeQ :: Text -> Query () ()
+formTypeQ t = statement sql encoder decoder True
+  where
+    sql     = "alter type form_type add value '" <> textToBS t <> "'"
+    encoder = E.unit
+    decoder = D.unit
+
+textToBS :: Text -> ByteString
+textToBS = toStrict . L8.pack . unpack 
+
+
 
 -- Config
 data Config = Config
