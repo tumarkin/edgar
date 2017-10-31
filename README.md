@@ -5,7 +5,7 @@ A simple command line utility to locally index and download filings from the SEC
 
 1. Edgar application
 
-    a. Download and install Haskell stack from [https://www.stackage.org]
+    a. Download and install [Haskell Stack](https://www.stackage.org).
 
     b. Clone this repository
 
