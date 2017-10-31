@@ -16,9 +16,9 @@ A simple command line utility to locally index and download filings from the SEC
 3. On the command line type `edgar init`. You will need to specify a path if
    you did not use the default database name. See getting help below.
 
-# Creating and updating your document index
+# Creating and updating your form index
 
-The document index is housed in the Postgres Dada's. *edgar* will help you
+The form index is housed in the Postgres Dada's. *edgar* will help you
 keep your index up to date. Each quarter, simply type `edgar update YEAR QTR`
 where *YEAR* is a 4-digit year and *QTR* is a 1-digit quarter. A batch
 utility (written in the fish shell) is available in the utility directory
