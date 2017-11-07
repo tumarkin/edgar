@@ -11,27 +11,28 @@ A simple command line utility to locally index and download filings from the SEC
 
     c. CD to the local repository directory and type `stack install`
 
-2. Install postgres and create a database (Edgar expects a database named 'edgar')
+2. Install postgres and create a database 
 
 3. On the command line type `edgar init`. You will need to specify a path if
-   you did not use the default database name. See getting help below.
+   you did not use the default database name (i.e. *edgar*). See getting help below.
 
 # Creating and updating your form index
 
-The form index is housed in the Postgres Dada's. *edgar* will help you
-keep your index up to date. Each quarter, simply type `edgar update YEAR QTR`
-where *YEAR* is a 4-digit year and *QTR* is a 1-digit quarter. A batch
-utility (written in the fish shell) is available in the utility directory
-to initialize your database through the end of 2016.
+The form index is housed in Postgres. *edgar* will keep your index up to date.
+Each quarter, simply type `edgar update YEAR QTR` where *YEAR* is a 4-digit
+year and *QTR* is a 1-digit quarter. A batch utility (written in the fish
+shell) is available in the utility directory to initialize your database
+through the end of 2016.
 
 # Downloading forms
 
-There are two modes to download forms by specifying conditions that forms needs
-to satisfy or by listing IDs from the database.
+There are two modes to download forms. You may either specify conditions that forms needs
+to satisfy or list IDs from the database.
 
 1. **Conditional**: Type `edgar download query --help` to see a list of
-   conditions. You may download by any combination of CIK, company name, form
-   type, start date, and end date.
+   conditions. You may download using any combination of CIK, company name, form
+   type, start date, and end date. For multiple possible CIKs, company names, or form types,
+   simply specify multiple option arguments.
 
 2. **ID**: Type `edgar download id ID1 ID2 ...` where *IDX* is the internal id 
 identifier from the forms table in the edgar postgres database.
