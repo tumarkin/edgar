@@ -36,13 +36,7 @@ to satisfy or by listing IDs from the database.
 2. **ID**: Type `edgar download id ID1 ID2 ...` where *IDX* is the internal id 
 identifier from the forms table in the edgar postgres database.
 
-*edgar* does not currently innately support simultaneous downloads. However, it
-is possible to get this functionality using the command line and the fact that
-conditional downloads are delivered in a random order. For example, to get two
-downloads simultaneously, open two command shells. In each, create an infinite
-loop that executes a single `edgar download query` command using a small batch
-size. An internal multiple streaming download feature may be added at a later
-date.
+*edgar* supports simultaneous downloads (default is 4). See --help.
 
 
 # Getting help

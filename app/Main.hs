@@ -1,12 +1,10 @@
-{-# LANGUAGE LambdaCase #-}
-
-import           ClassyPrelude
 import           Options.Applicative
 import           Options.Applicative.Helper
 
 import qualified Edgar.Download             as Download
 import qualified Edgar.Init                 as Init
 import qualified Edgar.Update               as Update
+import Edgar.Common
 
 
 data Command

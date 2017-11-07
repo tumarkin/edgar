@@ -1,11 +1,10 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 module Edgar.Common
   ( 
   -- * Types
     EdgarForm(..)
-  , Day
+  -- , Day
 
   -- * Hasql
   , connectTo
@@ -13,9 +12,15 @@ module Edgar.Common
 
   , encodeEdgarForm
 
+  -- * Optparse Applicative
+  , textOption
+
+  -- * Reexported modules
+  , module X
+
   ) where
 
-import           ClassyPrelude
+import           ClassyPrelude as X
 import           Data.Time.Calendar
 import           Data.Time.Format
 import           Hasql.Connection
@@ -24,6 +29,9 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Functor.Contravariant
 import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
+import           Options.Applicative.Helper as X
+import qualified Options.Applicative        as Opt
+
 
 connectTo :: ByteString -> IO Connection
 connectTo b = acquire b >>= \case
@@ -54,3 +62,6 @@ encodeEdgarForm = contramap cik (E.value E.int8)
            <> contramap formType (E.value E.text)
            <> contramap dateFiled (E.value E.date)
            <> contramap filename (E.value E.text)
+
+textOption :: Opt.Mod Opt.OptionFields String -> Opt.Parser Text
+textOption ms = pack <$> Opt.strOption ms

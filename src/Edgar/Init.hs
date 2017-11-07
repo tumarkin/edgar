@@ -1,22 +1,15 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-
 module Edgar.Init
   ( initDb
-  , opts
   , config
   , Config(..)
   )
   where
 
-import           ClassyPrelude
 import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Hasql.Query
 import           Hasql.Session
 import           Options.Applicative
-import Options.Applicative.Helper
 
 import Edgar.Common
 
@@ -66,7 +59,4 @@ config :: Options.Applicative.Parser Config
 config = Config
     <$> option auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
 
-
-opts :: ParserInfo Config
-opts = infoHelper config (fpDesc "Download edgar index files into DB")
 

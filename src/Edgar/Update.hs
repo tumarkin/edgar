@@ -1,39 +1,36 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE RankNTypes   #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE MultiWayIf   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiWayIf            #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Edgar.Update
   ( updateDbWithIndex
-  , opts
   , config
   , Config(..)
   )
   where
 
-import           ClassyPrelude
-import           Control.Monad.Trans.Resource
+import           Control.Lens                 (makeLenses)
+import           Control.Lens.Setter          ((+=))
 import           Control.Monad.State.Strict
-import qualified Data.ByteString              as BS
+import           Control.Monad.Trans.Resource
 import qualified Data.ByteString.Lazy.Char8   as L8
 import           Data.Char                    (ord)
-import           Data.Conduit                 (Conduit, Producer, Consumer, (.|))
+import           Data.Conduit                 (Conduit, Consumer, Producer,
+                                               (.|))
 import qualified Data.Conduit                 as C
 import qualified Data.Conduit.Binary          as C
 import qualified Data.Conduit.Zlib            as C
 import           Data.Csv                     hiding (header)
-import           Data.Functor.Contravariant
 import qualified Hasql.Decoders               as D
 import qualified Hasql.Encoders               as E
 import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
-import Control.Lens (makeLenses)
-import Control.Lens.Setter ((+=))
 
 import           Edgar.Common
 
@@ -41,7 +38,7 @@ import           Edgar.Common
 -- Types
 type UpdateM = StateT FormCounter (ResourceT IO)
 
-data FormCounter = FormCounter 
+data FormCounter = FormCounter
   { _inserted  :: !Int
   , _malformed :: !Int
   , _duplicate :: !Int
@@ -62,10 +59,10 @@ updateDbWithIndex c@ Config{..} = do
     (_, fc) <- runResourceT $  runStateT (C.runConduit (myConduit c conn)) nullFormCounter
     putStrLn $ finalMsg fc
   where
-    finalMsg FormCounter{..} = 
+    finalMsg FormCounter{..} =
         tshow _inserted <> " new forms inserted into DB" <>
-          if _duplicate > 0 
-          then " (" <> tshow _duplicate <> " known forms found)" 
+          if _duplicate > 0
+          then " (" <> tshow _duplicate <> " known forms found)"
           else ""
 
 myConduit :: Config -> Connection -> C.ConduitM a c UpdateM ()
@@ -100,7 +97,7 @@ ignoreC i =
 lazifyBSC :: Conduit ByteString UpdateM L8.ByteString
 lazifyBSC = C.awaitForever $ C.yield . L8.fromStrict
 
-toEdgarFormC :: (MonadIO m, MonadState FormCounter m) 
+toEdgarFormC :: (MonadIO m, MonadState FormCounter m)
               => Conduit L8.ByteString m EdgarForm
 toEdgarFormC = C.awaitForever $ \bs ->
     case toEdgarForm bs of
@@ -121,7 +118,7 @@ pipeDelimited =
     defaultDecodeOptions{ decDelimiter = fromIntegral (ord '|')}
 
 -- Database
-insertEdgarForm :: (MonadIO m, MonadState FormCounter m) 
+insertEdgarForm :: (MonadIO m, MonadState FormCounter m)
                  => Connection -> EdgarForm -> m ()
 insertEdgarForm c ef = liftIO (run (query ef insertQ) c) >>= \case
   Left e -> if | isDuplicateError e -> duplicate += 1
@@ -143,9 +140,9 @@ isEnumError :: Error -> Bool
 isEnumError (ResultError (ServerError _ msg _ _ )) = "invalid input value for enum" `isPrefixOf` msg
 isEnumError _ = False
 
-addEnumFormType :: MonadIO m 
+addEnumFormType :: MonadIO m
                 => Connection -> Text -> m ()
-addEnumFormType c t = 
+addEnumFormType c t =
   liftIO (run (query () (formTypeQ t)) c) >>= \case
     Left e  -> error $ show e
     Right _ -> return () -- putStrLn "Forms table created."
@@ -159,7 +156,7 @@ formTypeQ t = statement sql encoder decoder True
     decoder = D.unit
 
 textToBS :: Text -> ByteString
-textToBS = toStrict . L8.pack . unpack 
+textToBS = toStrict . L8.pack . unpack
 
 
 
@@ -177,10 +174,4 @@ config = Config
     <*> argument auto (metavar "QUARTER")
     <*> option   auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
 
-
-opts :: ParserInfo Config
-opts = info (config <**> helper)
-  ( fullDesc
-  <> progDesc "Download edgar index files into DB"
-  <> header "edgar - an archiver for SEC corporate filings data" )
 

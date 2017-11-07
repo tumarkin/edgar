@@ -24,5 +24,6 @@ dist/
 .DS_Store
 TODO.md
 .stack-work/
+src/Unused
 cabal.project.local
 .HTF/
