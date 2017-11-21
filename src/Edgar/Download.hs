@@ -22,6 +22,7 @@ import           System.Directory
 import           System.FilePath
 
 import           Edgar.Common
+import           Edgar.Concurrent
 
 
 download :: Config -> IO ()
@@ -41,24 +42,7 @@ download c@Config{..} = do
 
   putStrLn $ "Not downloaded: " <> tshow nToDownload
 
-  queue <- newMVar forms'
-  dc    <- newMVar 0
-
-  threadId <- spawnThreads concurrentDLs (conn, dir, queue, dc)
-
-  renderProgressBarUntilComplete nToDownload dc
-
-spawnThreads :: Int -> (Connection, FilePath, Queue, DownloadCounter) -> IO [ThreadId]
-spawnThreads n (conn, basedir, q, dc) =
-  replicateM n $ forkIO (downloadThread conn basedir q dc)
-
-downloadThread :: Connection -> FilePath -> Queue -> DownloadCounter -> IO ()
-downloadThread conn basedir q dc =
-  nextForm q >>= \case
-    Nothing -> return ()
-    Just nf -> downloadAndSaveForm conn basedir nf
-              >> incrementCounter dc
-              >> downloadThread conn basedir q dc
+  runConcurrent concurrentDLs (downloadAndSaveForm conn dir) forms'
 
 downloadAndSaveForm :: Connection -> FilePath -> Text -> IO ()
 downloadAndSaveForm conn basedir ffn = do
