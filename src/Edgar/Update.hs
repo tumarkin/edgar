@@ -31,6 +31,7 @@ import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
+import Data.Ix
 
 import           Edgar.Common
 
@@ -49,14 +50,22 @@ makeLenses ''FormCounter
 nullFormCounter :: FormCounter
 nullFormCounter = FormCounter 0 0 0
 
-type Year    = Int
-type Quarter = Int
+-- type Year    = Int
+-- type Quarter = Int
 
 -- Application
 updateDbWithIndex :: Config -> IO ()
-updateDbWithIndex c@ Config{..} = do
+updateDbWithIndex c@Config{..} =  do
     conn <- connectTo psql
-    (_, fc) <- runResourceT $  runStateT (C.runConduit (myConduit c conn)) nullFormCounter
+    Edgar.Common.mapM_ (updateDbYearQtr c conn) $ range (startYq, endYq)
+
+
+
+updateDbYearQtr :: Config -> Connection -> YearQtr -> IO ()
+updateDbYearQtr c conn yq = do
+    putStrLn $ "Updating " <> tshow (year yq) <> " quarter " <> tshow (qtr yq) <> ".."
+    (_, fc) <- runResourceT $  runStateT (C.runConduit (myConduit c conn yq)) nullFormCounter
+    putStr "  "
     putStrLn $ finalMsg fc
   where
     finalMsg FormCounter{..} =
@@ -65,9 +74,9 @@ updateDbWithIndex c@ Config{..} = do
           then " (" <> tshow _duplicate <> " known forms found)"
           else ""
 
-myConduit :: Config -> Connection -> C.ConduitM a c UpdateM ()
-myConduit c@Config{..} conn
-    =  indexSourceC c
+myConduit :: Config -> Connection -> YearQtr -> C.ConduitM a c UpdateM ()
+myConduit c@Config{..} conn yq
+    =  indexSourceC c yq
     .| C.ungzip
     .| C.lines
     .| dropHeaderC
@@ -75,11 +84,11 @@ myConduit c@Config{..} conn
     .| toEdgarFormC
     .| storeFormC conn
 
-indexSourceC :: Config -> C.Producer UpdateM ByteString
-indexSourceC Config{..} =
+indexSourceC :: Config -> YearQtr -> C.Producer UpdateM ByteString
+indexSourceC Config{..} yq =
     httpSource url getResponseBody
   where
-    url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show year <> "/QTR" <> show qtr <> "/master.gz"
+    url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show (year yq) <> "/QTR" <> show (qtr yq) <> "/master.gz"
 
 
 
@@ -162,16 +171,16 @@ textToBS = toStrict . L8.pack . unpack
 
 -- Config
 data Config = Config
-  { year :: !Year
-  , qtr  :: !Quarter
+  { startYq :: !YearQtr
+  , endYq   :: !YearQtr
   , psql :: !ByteString
   }
 
 
 config :: Options.Applicative.Parser Config
 config = Config
-    <$> argument auto (metavar "YEAR")
-    <*> argument auto (metavar "QUARTER")
+    <$> argument auto (metavar "START"<> help "Year quarter specified as YYYYqQ (e.g. 1999q1)")
+    <*> argument auto (metavar "END" <> help "Year quarter specified as YYYYqQ")
     <*> option   auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
 
 

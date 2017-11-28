@@ -19,10 +19,10 @@ A simple command line utility to locally index and download filings from the SEC
 # Creating and updating your form index
 
 The form index is housed in Postgres. *edgar* will keep your index up to date.
-Each quarter, simply type `edgar update YEAR QTR` where *YEAR* is a 4-digit
-year and *QTR* is a 1-digit quarter. A batch utility (written in the fish
-shell) is available in the utility directory to initialize your database
-through the end of 2016.
+Each quarter, simply type `edgar update START END`. *START* and *END** are
+year-quarters, each written as YYYYqQ. For example, 1999 quarter 2 is written
+as *1999q2*.
+
 
 # Downloading forms
 

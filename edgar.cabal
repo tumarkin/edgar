@@ -18,11 +18,13 @@ library
   exposed-modules:     Edgar.Update
                      , Edgar.Init
                      , Edgar.Common
+                     , Edgar.Concurrent
                      , Edgar.Download
   build-depends:       base >= 4.7 && < 5
                      , ascii-progress
                      , classy-prelude
                      , cassava
+                     , concurrent-output
                      , contravariant
                      , contravariant-extras
                      , conduit
@@ -34,6 +36,7 @@ library
                      , http-conduit
                      , http-types
                      , lens
+                     , parsec
                      , mtl
                      , optparse-applicative
                      , optparse-helper
