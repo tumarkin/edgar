@@ -20,8 +20,8 @@ A simple command line utility to locally index and download filings from the SEC
 
 The form index is housed in Postgres. *edgar* will keep your index up to date.
 Each quarter, simply type `edgar update START END`. *START* and *END* are
-year-quarters, each written as YYYYqQ. For example, 1999 quarter 2 is written
-as *1999q2*.
+year-quarters, each specified as YYYYqQ. For example, 1999 quarter 2 is as
+*1999q2*.
 
 
 # Downloading forms
