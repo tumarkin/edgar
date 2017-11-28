@@ -31,7 +31,6 @@ import           Hasql.Query
 import           Hasql.Session
 import           Network.HTTP.Simple
 import           Options.Applicative
-import Data.Ix
 
 import           Edgar.Common
 
@@ -57,7 +56,7 @@ nullFormCounter = FormCounter 0 0 0
 updateDbWithIndex :: Config -> IO ()
 updateDbWithIndex c@Config{..} =  do
     conn <- connectTo psql
-    Edgar.Common.mapM_ (updateDbYearQtr c conn) $ range (startYq, endYq)
+    Edgar.Common.mapM_ (updateDbYearQtr c conn) [startYq..fromMaybe startYq endYq]
 
 
 
@@ -172,15 +171,15 @@ textToBS = toStrict . L8.pack . unpack
 -- Config
 data Config = Config
   { startYq :: !YearQtr
-  , endYq   :: !YearQtr
+  , endYq   :: !(Maybe YearQtr)
   , psql :: !ByteString
   }
 
 
 config :: Options.Applicative.Parser Config
 config = Config
-    <$> argument auto (metavar "START"<> help "Year quarter specified as YYYYqQ (e.g. 1999q1)")
-    <*> argument auto (metavar "END" <> help "Year quarter specified as YYYYqQ")
+    <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
+    <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
     <*> option   auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
 
 

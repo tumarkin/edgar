@@ -36,7 +36,6 @@ import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Options.Applicative.Helper as X
 import qualified Options.Applicative        as Opt
-import Data.Ix
 import GHC.Read
 -- import Text.Parsec 
 import Prelude (read)
@@ -116,43 +115,9 @@ readYqP = do
   _ <- RP.eof
   return $ yearQtr (read y) (read $ q : "")
 
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-instance Ix YearQtr where
-  range   (s, e)   = map fromInt $ range (toInt s, toInt e)
-  index   (s, e) y = Data.Ix.index (toInt s, toInt e) $ toInt y
-  inRange (s, e) y = (s <= y && y <= e) || (s >= y && y >= e)
-
-
-
-toInt :: YearQtr -> Int
-toInt yq = year yq * 4 + qtr yq
-
-fromInt :: Int -> YearQtr
-fromInt i = YearQtr y m
-  where
-
-    m = if m' == 0 then 4 else m'
-    y = if m' == 0 then y' - 1 else y'
-
-    y' = quot i 4
-    m' = mod i 4
-
-
-
+instance Enum YearQtr where
+  fromEnum yq = year yq * 4 + (qtr yq - 1)
+  toEnum    i = YearQtr y m
+    where
+      m = mod i 4 + 1
+      y = quot i 4
