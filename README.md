@@ -1,6 +1,10 @@
 # edgar
 A simple command line utility to locally index and download filings from the SEC Edgar database.
 
+# Features
+
+Edgar builds a local Postgres database of forms on Edgar and then allows you to download forms using queries based on any combination of CIK, company name, form type (e.g. 10-K), start date, and end date. It is also possible to download forms by the internal identifier in the database. `edgar --help` provides information on all commands/sub-commands. Downloads are run in parallel enabling Edgar to download data efficiently. 
+
 # Installation
 
 1. Edgar application
