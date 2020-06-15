@@ -1,11 +1,11 @@
 # edgar
 A simple command line utility to locally index and download filings from the SEC Edgar database.
 
-# Features
+## Features
 
 Edgar builds a local Postgres database of forms on Edgar and then allows you to download forms using queries based on any combination of CIK, company name, form type (e.g. 10-K), start date, and end date. It is also possible to download forms by the internal identifier in the database. `edgar --help` provides information on all commands/sub-commands. Downloads are run in parallel enabling Edgar to download data efficiently. 
 
-# Installation
+## Installation
 
 1. Edgar application
 
@@ -22,7 +22,7 @@ Edgar builds a local Postgres database of forms on Edgar and then allows you to 
 3. On the command line type `edgar init`. You will need to specify a path if
    you did not use the default database name (i.e. *edgar*). See getting help below.
 
-# Creating and updating your form index
+## Creating and updating your form index
 
 The form index is housed in Postgres. *edgar* will keep your index up to date.
 Each quarter, simply type `edgar update START END`. *START* and *END* are
@@ -30,7 +30,7 @@ year-quarters, each specified as YYYYqQ. For example, 1999 quarter 2 is as
 *1999q2*.
 
 
-# Downloading forms
+## Downloading forms
 
 There are two modes to download forms. You may either specify conditions that forms needs
 to satisfy or list IDs from the database.
@@ -46,7 +46,7 @@ identifier from the forms table in the edgar postgres database.
 *edgar* supports simultaneous downloads (default is 4). See --help.
 
 
-# Getting help
+## Getting help
 
 `edgar --help` will provide help on usage. Each sub-command provides individualized help. For example,
 to get help on downloading, type `edgar download --help`. 
