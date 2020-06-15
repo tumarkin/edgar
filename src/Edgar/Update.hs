@@ -1,11 +1,3 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE MultiWayIf            #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
-
 module Edgar.Update
   ( updateDbWithIndex
   , config
@@ -13,67 +5,71 @@ module Edgar.Update
   )
   where
 
-import           Control.Lens                 (makeLenses)
-import           Control.Lens.Setter          ((+=))
 import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Resource
-import qualified Data.ByteString.Lazy.Char8   as L8
+import           Lens.Micro.Mtl               ((+=))
+import           Lens.Micro.Platform          (makeLenses)
 import           Data.Char                    (ord)
-import           Data.Conduit                 (Conduit, Consumer, Producer,
-                                               (.|))
+import           Data.Conduit                 (ConduitT, (.|))
 import qualified Data.Conduit                 as C
 import qualified Data.Conduit.Binary          as C
 import qualified Data.Conduit.Zlib            as C
 import           Data.Csv                     hiding (header)
 import qualified Hasql.Decoders               as D
 import qualified Hasql.Encoders               as E
-import           Hasql.Query
 import           Hasql.Session
+import           Hasql.Statement
 import           Network.HTTP.Simple
 import           Options.Applicative
+import qualified Data.Vector                  as Partial
 
 import           Edgar.Common
 
 
--- Types
+
+--------------------------------------------------------------------------------
+-- Types                                                                      --
+--------------------------------------------------------------------------------
 type UpdateM = StateT FormCounter (ResourceT IO)
 
 data FormCounter = FormCounter
-  { _inserted  :: !Int
-  , _malformed :: !Int
-  , _duplicate :: !Int
+  { _inserted  ∷ !Int
+  , _malformed ∷ !Int
+  , _duplicate ∷ !Int
   } deriving (Show)
 
 makeLenses ''FormCounter
 
-nullFormCounter :: FormCounter
+nullFormCounter ∷ FormCounter
 nullFormCounter = FormCounter 0 0 0
 
--- type Year    = Int
--- type Quarter = Int
+type Year    = Int
+type Quarter = Int
 
--- Application
-updateDbWithIndex :: Config -> IO ()
+--------------------------------------------------------------------------------
+-- Main functions                                                             --
+--------------------------------------------------------------------------------
+updateDbWithIndex ∷ Config → IO ()
 updateDbWithIndex c@Config{..} =  do
     conn <- connectTo psql
     Edgar.Common.mapM_ (updateDbYearQtr c conn) [startYq..fromMaybe startYq endYq]
 
 
 
-updateDbYearQtr :: Config -> Connection -> YearQtr -> IO ()
+updateDbYearQtr ∷ Config → Connection → YearQtr → IO ()
 updateDbYearQtr c conn yq = do
-    putStrLn $ "Updating " <> tshow (year yq) <> " quarter " <> tshow (qtr yq) <> ".."
+    putStrLn $ "Updating " <> show (year yq) <> " quarter " <> show (qtr yq) <> ".."
     (_, fc) <- runResourceT $  runStateT (C.runConduit (myConduit c conn yq)) nullFormCounter
     putStr "  "
     putStrLn $ finalMsg fc
   where
     finalMsg FormCounter{..} =
-        tshow _inserted <> " new forms inserted into DB" <>
+        show _inserted <> " new forms inserted into DB" <>
           if _duplicate > 0
-          then " (" <> tshow _duplicate <> " known forms found)"
+          then " (" <> show _duplicate <> " known forms found)"
           else ""
 
-myConduit :: Config -> Connection -> YearQtr -> C.ConduitM a c UpdateM ()
+myConduit ∷ Config → Connection → YearQtr → C.ConduitM a c UpdateM ()
 myConduit c@Config{..} conn yq
     =  indexSourceC c yq
     .| C.ungzip
@@ -83,7 +79,7 @@ myConduit c@Config{..} conn yq
     .| toEdgarFormC
     .| storeFormC conn
 
-indexSourceC :: Config -> YearQtr -> C.Producer UpdateM ByteString
+indexSourceC ∷ Config → YearQtr → ConduitT i ByteString UpdateM ()
 indexSourceC Config{..} yq =
     httpSource url getResponseBody
   where
@@ -91,92 +87,92 @@ indexSourceC Config{..} yq =
 
 
 
-dropHeaderC :: Conduit ByteString UpdateM ByteString
+dropHeaderC ∷ ConduitT ByteString ByteString UpdateM ()
 dropHeaderC = ignoreC 11
 
-ignoreC :: Int -> Conduit ByteString UpdateM ByteString
+ignoreC ∷ Int → ConduitT ByteString ByteString UpdateM ()
 ignoreC 0 = C.awaitForever C.yield
 ignoreC i =
     C.await >>= \case
-      Nothing -> return ()
-      Just _  -> ignoreC (i-1)
+      Nothing → return ()
+      Just _  → ignoreC (i-1)
 
 
-lazifyBSC :: Conduit ByteString UpdateM L8.ByteString
-lazifyBSC = C.awaitForever $ C.yield . L8.fromStrict
+lazifyBSC ∷ ConduitT ByteString LByteString UpdateM ()
+lazifyBSC = C.awaitForever $ C.yield . toLazy
 
-toEdgarFormC :: (MonadIO m, MonadState FormCounter m)
-              => Conduit L8.ByteString m EdgarForm
-toEdgarFormC = C.awaitForever $ \bs ->
+toEdgarFormC ∷ (MonadIO m, MonadState FormCounter m) => ConduitT LByteString EdgarForm m ()
+toEdgarFormC = C.awaitForever $ \bs →
     case toEdgarForm bs of
-      Left e   -> do
+      Left e   → do
                   malformed += 1
-                  liftIO . L8.putStrLn $ "Error reading form: " ++ bs
-      Right ef -> C.yield ef
+                  liftIO . putStrLn . decodeUtf8 $ "Error reading form: " <> bs
+      Right ef → C.yield ef
 
-storeFormC :: Connection -> Consumer EdgarForm UpdateM ()
-storeFormC conn = C.awaitForever $ \ef -> insertEdgarForm conn ef
+storeFormC ∷ Connection → ConduitT EdgarForm o UpdateM ()
+storeFormC conn = C.awaitForever $ \ef → insertEdgarForm conn ef
 
 
-toEdgarForm :: L8.ByteString -> Either String EdgarForm
-toEdgarForm b = unsafeHead <$> decodeWith pipeDelimited NoHeader b
+toEdgarForm ∷ LByteString → Either String EdgarForm
+toEdgarForm b = Partial.head <$> decodeWith pipeDelimited NoHeader b
 
-pipeDelimited :: DecodeOptions
+pipeDelimited ∷ DecodeOptions
 pipeDelimited =
     defaultDecodeOptions{ decDelimiter = fromIntegral (ord '|')}
 
--- Database
-insertEdgarForm :: (MonadIO m, MonadState FormCounter m)
-                 => Connection -> EdgarForm -> m ()
-insertEdgarForm c ef = liftIO (run (query ef insertQ) c) >>= \case
-  Left e -> if | isDuplicateError e -> duplicate += 1
-               | isEnumError e      -> addEnumFormType c (formType ef) >> insertEdgarForm c ef
-               | otherwise          -> error $ show e
-  Right _ -> inserted += 1
+--------------------------------------------------------------------------------
+-- Database functions                                                         --
+--------------------------------------------------------------------------------
+insertEdgarForm ∷ (MonadIO m, MonadState FormCounter m)
+                 => Connection → EdgarForm → m ()
+insertEdgarForm c ef = liftIO (run (statement ef insertQ) c) >>= \case
+  Left e → if | isDuplicateError e → duplicate += 1
+              | isEnumError e      → addEnumFormType c (formType ef) >> insertEdgarForm c ef
+              | otherwise          → error $ show e
+  Right _ → inserted += 1
 
 
-insertQ :: Query EdgarForm ()
-insertQ = statement sql encodeEdgarForm D.unit True
+insertQ ∷ Statement EdgarForm ()
+insertQ = Statement sql encodeEdgarForm D.noResult True
   where
     sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3::form_type, $4, $5)"
 
-isDuplicateError :: Error -> Bool
-isDuplicateError (ResultError (ServerError _ msg _ _)) = "duplicate key value" `isPrefixOf` msg
+isDuplicateError ∷ QueryError → Bool
+isDuplicateError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ ))) = "duplicate key value" `isPrefixOf` msg
+  where msg = decodeUtf8 msgBs
 isDuplicateError _ = False
 
-isEnumError :: Error -> Bool
-isEnumError (ResultError (ServerError _ msg _ _ )) = "invalid input value for enum" `isPrefixOf` msg
+isEnumError ∷ QueryError → Bool
+isEnumError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ ))) = "invalid input value for enum" `isPrefixOf` msg
+  where msg = decodeUtf8 msgBs
 isEnumError _ = False
 
-addEnumFormType :: MonadIO m
-                => Connection -> Text -> m ()
+addEnumFormType ∷ MonadIO m
+                => Connection → Text → m ()
 addEnumFormType c t =
-  liftIO (run (query () (formTypeQ t)) c) >>= \case
-    Left e  -> error $ show e
-    Right _ -> return () -- putStrLn "Forms table created."
+  liftIO (run (statement () (formTypeQ t)) c) >>= \case
+    Left e  → error $ show e
+    Right _ → return () -- putStrLn "Forms table created."
 
 
-formTypeQ :: Text -> Query () ()
-formTypeQ t = statement sql encoder decoder True
+formTypeQ ∷ Text → Statement () ()
+formTypeQ t = Statement sql encoder decoder True
   where
-    sql     = "alter type form_type add value '" <> textToBS t <> "'"
-    encoder = E.unit
-    decoder = D.unit
+    sql     = "alter type form_type add value '" <> encodeUtf8 t <> "'"
+    encoder = E.noParams
+    decoder = D.noResult
 
-textToBS :: Text -> ByteString
-textToBS = toStrict . L8.pack . unpack
-
-
-
--- Config
+--------------------------------------------------------------------------------
+-- Config and CLI                                                             --
+--------------------------------------------------------------------------------
 data Config = Config
-  { startYq :: !YearQtr
-  , endYq   :: !(Maybe YearQtr)
-  , psql :: !ByteString
+  { startYq ∷ !YearQtr
+  , endYq   ∷ !(Maybe YearQtr)
+  , psql    ∷ !ByteString
   }
 
 
-config :: Options.Applicative.Parser Config
+config ∷ Options.Applicative.Parser Config
 config = Config
     <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
     <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
