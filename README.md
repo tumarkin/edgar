@@ -15,7 +15,7 @@ Edgar builds a local Postgres database of forms on Edgar and then allows you to 
 
     c. CD to the local repository directory and type `stack install`. 
     
-    d. On occassion, `stack` may fail on the install due to ordering of dependencies. Just run `stack install` again and it will pick up where it left off.
+    d. On occassion, `stack` may temporarily fail on the install due to the way it handles parallel installation of dependencies. Just run `stack install` again and it will pick up where it left off.
 
 2. Install postgres and create a database 
 
