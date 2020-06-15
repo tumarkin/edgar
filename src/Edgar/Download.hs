@@ -140,9 +140,9 @@ configIdMode    = config idMode
 config ∷ Options.Applicative.Parser Mode → Options.Applicative.Parser Config
 config m = Config
     <$> m
-    <*> option   auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
-    <*> option   auto (short 'd' <> long "directory" <> value "." <> showDefault <> help "Archive root directory")
-    <*> option   auto (short 'n' <> value 4 <> showDefault <> help "Number of concurrent downloads")
+    <*> option   auto (short 'p' <> long "postgres"             <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
+    <*> option   auto (short 'd' <> long "directory"            <> value "." <> showDefault <> help "Archive root directory")
+    <*> option   auto (short 'n' <> long "concurrent-downloads" <> value 4   <> showDefault <> help "Number of concurrent downloads")
 
 
 idMode ∷ Options.Applicative.Parser Mode
