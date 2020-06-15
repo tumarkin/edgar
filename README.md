@@ -9,7 +9,9 @@ A simple command line utility to locally index and download filings from the SEC
 
     b. Clone this repository
 
-    c. CD to the local repository directory and type `stack install`
+    c. CD to the local repository directory and type `stack install`. 
+    
+    d. On occassion, `stack` may fail on the install due to ordering of dependencies. Just run `stack install` again and it will pick up where it left off.
 
 2. Install postgres and create a database 
 
