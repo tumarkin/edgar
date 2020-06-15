@@ -1,0 +1,77 @@
+name:                edgar
+version:             0.1.0.3
+github:              "tumarkin/edgar"
+license:             BSD3
+author:              "Robert Tumarkin"
+maintainer:          "r.tumarkin@unsw.edu.au"
+copyright:           "2020 Robert Tumarkin"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/tumarkin/edgar#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  dependencies:
+    - ascii-progress
+    - bytestring
+    - cassava
+    - cassava
+    - conduit
+    - conduit-extra
+    - directory
+    - filepath
+    - hasql
+    - http-conduit
+    - parsec
+    - microlens-mtl
+    - microlens-platform
+    - mtl
+    - optparse-applicative
+    - optparse-simple
+    - relude
+    - resourcet
+    - time
+    - vector
+
+executables:
+  edgar:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - edgar
+    - mtl
+    - optparse-applicative
+    - optparse-simple
+
+default-extensions:
+- BlockArguments
+- DeriveGeneric
+- FlexibleContexts
+- LambdaCase
+- LambdaCase
+- MultiParamTypeClasses
+- MultiWayIf
+- NoImplicitPrelude
+- OverloadedStrings
+- RankNTypes
+- RecordWildCards
+- TemplateHaskell
+- UnicodeSyntax
+
