@@ -1,6 +1,5 @@
 module Edgar.Init
   ( initDb
-  , config
   , Config(..)
   )
   where
@@ -16,7 +15,7 @@ import           Edgar.Common
 
 initDb ∷ Config → IO ()
 initDb Config{..} = do
-  c <- connectTo psql
+  c <- connectTo $ encodeUtf8 psql
   run (statement () formTypeQ) c >>= \case
     Left e  → error $ show e
     Right _ → putStrLn "Enumerated form type created."
@@ -54,10 +53,6 @@ formTypeQ = Statement sql encoder decoder True
 --------------------------------------------------------------------------------
 -- Config and CLI                                                             --
 --------------------------------------------------------------------------------
-newtype Config = Config {psql ∷ ByteString }
-
-config ∷ Options.Applicative.Parser Config
-config = Config
-    <$> option auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
+newtype Config = Config {psql ∷ String }
 
 
