@@ -1,8 +1,8 @@
 module Edgar.Download
   ( download
   , Config(..)
-  , configQueryMode
-  , configIdMode
+  , Mode(..)
+  , Conditions(..)
   )
   where
 
@@ -22,7 +22,7 @@ import           Edgar.Concurrent
 
 download ∷ Config → IO ()
 download c@Config{..} = do
-    conn <- connectTo psql
+    conn <- connectTo $ encodeUtf8 psql
 
     -- Get form filepaths
     forms <- case mode of
@@ -116,7 +116,7 @@ apostrophize False x = x
 --------------------------------------------------------------------------------
 data Config = Config
   { mode          ∷ !Mode
-  , psql          ∷ !ByteString
+  , psql          ∷ !String
   , dir           ∷ !FilePath
   , concurrentDLs ∷ !Int
   }
@@ -132,31 +132,5 @@ data Conditions = Conditions
   , startDate   ∷ !(Maybe Day)
   , endDate     ∷ !(Maybe Day)
   }
-
-
-configQueryMode = config queryMode
-configIdMode    = config idMode
-
-config ∷ Options.Applicative.Parser Mode → Options.Applicative.Parser Config
-config m = Config
-    <$> m
-    <*> option   auto (short 'p' <> long "postgres"             <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
-    <*> option   auto (short 'd' <> long "directory"            <> value "." <> showDefault <> help "Archive root directory")
-    <*> option   auto (short 'n' <> long "concurrent-downloads" <> value 4   <> showDefault <> help "Number of concurrent downloads")
-
-
-idMode ∷ Options.Applicative.Parser Mode
-idMode = IdMode <$> many (argument auto (metavar "FORM-ID"))
-
-queryMode ∷ Options.Applicative.Parser Mode
-queryMode = QueryMode <$> conditions
-
-conditions ∷ Options.Applicative.Parser Conditions
-conditions = Conditions
-    <$> many     (option auto (short 'c' <> long "cik" <> metavar "INT" <> help "CIKs to download"))
-    <*> many     (textOption  (short 'n' <> long "name" <> metavar "TEXT" <> help "Company names"))
-    <*> many     (textOption  (short 't' <> long "form-type" <> metavar "TEXT" <> help "Form types to download"))
-    <*> optional (option auto (short 's' <> long "start" <> metavar "DATE" <> help "Start date (YYYY-MM-DD)"))
-    <*> optional (option auto (short 'e' <> long "end" <> metavar "DATE" <> help "End date (YYYY-MM-DD)"))
 
 

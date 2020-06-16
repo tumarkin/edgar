@@ -15,11 +15,12 @@ data Command
 
 commands ∷ ExceptT Command (Writer (Mod CommandFields Command)) ()
 commands = do
-    addCommand     "init"     "Initialize database" Init     Init.config
-    addCommand     "update"   "Update form index"   Update   Update.config
+    addCommand     "init"     "Initialize database" Init     initConf
+    addCommand     "update"   "Update form index"   Update   updateConf
     addSubCommands "download" "Download forms"      do
-      addCommand "query" "Download documents satisfying specified conditions" Download Download.configQueryMode
-      addCommand "id"    "Download documents with given ids"                  Download Download.configIdMode
+      addCommand "query" "Download documents satisfying specified conditions" Download downloadQueryMode
+      addCommand "id"    "Download documents with given ids"                  Download downloadIdMode
+
 
 
 
@@ -35,4 +36,49 @@ main = do
       Init c     → Init.initDb c
       Update c   → Update.updateDbWithIndex c
       Download c → Download.download c
+
+--------------------------------------------------------------------------------
+-- Command Parsers                                                            --
+--------------------------------------------------------------------------------
+initConf ∷ Parser Init.Config
+initConf = Init.Config <$> postgres
+
+updateConf ∷ Parser Update.Config
+updateConf = Update.Config
+    <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
+    <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
+    <*> postgres
+
+downloadQueryMode = downloadConfig queryMode
+downloadIdMode    = downloadConfig idMode
+
+idMode ∷ Parser Download.Mode
+idMode = Download.IdMode <$> many (argument auto (metavar "FORM-ID"))
+
+queryMode ∷ Parser Download.Mode
+queryMode = Download.QueryMode <$> conditions
+
+
+downloadConfig ∷ Parser Download.Mode → Parser Download.Config
+downloadConfig modeParser = Download.Config
+    <$> modeParser
+    <*> postgres
+    <*> option   auto (short 'd' <> long "directory"            <> value "." <> showDefault <> help "Archive root directory")
+    <*> option   auto (short 'n' <> long "concurrent-downloads" <> value 4   <> showDefault <> help "Number of concurrent downloads")
+
+
+conditions ∷ Parser Download.Conditions
+conditions = Download.Conditions
+    <$> many     (option auto (short 'c' <> long "cik" <> metavar "INT" <> help "CIKs to download"))
+    <*> many     (textOption  (short 'n' <> long "name" <> metavar "TEXT" <> help "Company names"))
+    <*> many     (textOption  (short 't' <> long "form-type" <> metavar "TEXT" <> help "Form types to download"))
+    <*> optional (option auto (short 's' <> long "start" <> metavar "DATE" <> help "Start date (YYYY-MM-DD)"))
+    <*> optional (option auto (short 'e' <> long "end" <> metavar "DATE" <> help "End date (YYYY-MM-DD)"))
+
+
+--------------------------------------------------------------------------------
+-- Individual option  parsers                                                 --
+--------------------------------------------------------------------------------
+postgres ∷ Parser String
+postgres = strOption (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path postgresql::/username:password@host:port/database")
 

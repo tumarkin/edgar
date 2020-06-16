@@ -1,6 +1,5 @@
 module Edgar.Update
   ( updateDbWithIndex
-  , config
   , Config(..)
   )
   where
@@ -51,7 +50,7 @@ type Quarter = Int
 --------------------------------------------------------------------------------
 updateDbWithIndex ∷ Config → IO ()
 updateDbWithIndex c@Config{..} =  do
-    conn <- connectTo psql
+    conn <- connectTo $ encodeUtf8 psql
     Edgar.Common.mapM_ (updateDbYearQtr c conn) [startYq..fromMaybe startYq endYq]
 
 
@@ -168,14 +167,6 @@ formTypeQ t = Statement sql encoder decoder True
 data Config = Config
   { startYq ∷ !YearQtr
   , endYq   ∷ !(Maybe YearQtr)
-  , psql    ∷ !ByteString
+  , psql    ∷ !String
   }
-
-
-config ∷ Options.Applicative.Parser Config
-config = Config
-    <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
-    <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
-    <*> option   auto (short 'p' <> long "postgres" <> value "postgresql://localhost/edgar" <> showDefault <> help "Postgres path")
-
 
