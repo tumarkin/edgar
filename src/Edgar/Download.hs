@@ -6,15 +6,12 @@ module Edgar.Download
   )
   where
 
-import           Conduit                      (MonadThrow)
-import           Control.Concurrent           (forkIO, modifyMVar_, threadDelay)
-import qualified Hasql.Decoders               as D
-import qualified Hasql.Encoders               as E
+import           Conduit             (MonadThrow)
+import qualified Hasql.Decoders      as D
+import qualified Hasql.Encoders      as E
 import           Hasql.Session
 import           Hasql.Statement
 import           Network.HTTP.Simple
-import           Options.Applicative
-import           System.Console.AsciiProgress
 
 import           Edgar.Common
 import           Edgar.Concurrent

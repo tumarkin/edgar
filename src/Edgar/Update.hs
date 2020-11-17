@@ -4,27 +4,21 @@ module Edgar.Update
   )
   where
 
-import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Resource
-import qualified Data.ByteString.Char8        as BS
-import qualified Data.ByteString.Lazy.Char8        as BSL
-import           Data.Char                    (ord)
+import qualified Data.ByteString.Lazy.Char8   as BSL
 import           Data.Conduit                 (ConduitT, (.|))
 import qualified Data.Conduit                 as C
 import qualified Data.Conduit.Binary          as C
 import qualified Data.Conduit.Zlib            as C
-import Data.Text.Encoding (decodeUtf8')
 import           Data.Csv                     hiding (header)
 import qualified Data.Vector                  as Partial
 import qualified Hasql.Decoders               as D
 import qualified Hasql.Encoders               as E
 import           Hasql.Session
 import           Hasql.Statement
-import           Lens.Micro.Mtl               ((+=))
-import           Lens.Micro.Platform          (makeLenses)
+import           Lens.Micro.Platform          (makeLenses, (+=))
 import           Network.HTTP.Simple
-import           Options.Applicative
-import           UnliftIO.Exception
+
 
 import           Edgar.Common
 
@@ -117,9 +111,6 @@ toEdgarFormC = C.awaitForever yieldForm
 
 storeFormC ∷ Connection → ConduitT EdgarForm o UpdateM ()
 storeFormC conn = C.awaitForever $ \ef → insertEdgarForm conn ef
-
--- toEdgarForm :: LByteString -> Either ByteString EdgarForm
-
 
 pipeDelimited ∷ DecodeOptions
 pipeDelimited =

@@ -8,7 +8,6 @@ import qualified Hasql.Decoders             as D
 import qualified Hasql.Encoders             as E
 import           Hasql.Statement
 import           Hasql.Session
-import           Options.Applicative
 
 import           Edgar.Common
 

@@ -1,5 +1,5 @@
 name:                edgar
-version:             0.1.0.3
+version:             0.1.0.4
 github:              "tumarkin/edgar"
 license:             BSD3
 author:              "Robert Tumarkin"
@@ -8,7 +8,6 @@ copyright:           "2020 Robert Tumarkin"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -28,7 +27,6 @@ library:
     - ascii-progress
     - bytestring
     - cassava
-    - cassava
     - conduit
     - conduit-extra
     - directory
@@ -44,8 +42,6 @@ library:
     - relude
     - resourcet
     - time
-    - text
-    - unliftio
     - vector
 
 executables:
