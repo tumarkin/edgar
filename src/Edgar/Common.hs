@@ -25,14 +25,13 @@ module Edgar.Common
 import           Data.Time.Calendar              as X (Day)
 import           Data.Time.Format                as X (defaultTimeLocale,
                                                        formatTime, parseTimeM)
-import           Options.Applicative.Simple      as X
 import           Relude                          as X
 import           System.Directory                as X
 import           System.FilePath                 as X
 
 import qualified Data.ByteString.Lazy.Char8      as L8
 import           Data.Char                       (isDigit)
-import           Data.Csv
+import           Data.Csv (FromRecord, ToRecord, FromField(..), ToField(..))
 import           GHC.Read
 import           Hasql.Connection
 import qualified Hasql.Encoders                  as E

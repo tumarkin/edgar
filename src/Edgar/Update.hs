@@ -4,23 +4,21 @@ module Edgar.Update
   )
   where
 
-import           Control.Monad.State.Strict
 import           Control.Monad.Trans.Resource
-import           Lens.Micro.Mtl               ((+=))
-import           Lens.Micro.Platform          (makeLenses)
-import           Data.Char                    (ord)
+import qualified Data.ByteString.Lazy.Char8   as BSL
 import           Data.Conduit                 (ConduitT, (.|))
 import qualified Data.Conduit                 as C
 import qualified Data.Conduit.Binary          as C
 import qualified Data.Conduit.Zlib            as C
 import           Data.Csv                     hiding (header)
+import qualified Data.Vector                  as Partial
 import qualified Hasql.Decoders               as D
 import qualified Hasql.Encoders               as E
 import           Hasql.Session
 import           Hasql.Statement
+import           Lens.Micro.Platform          (makeLenses, (+=))
 import           Network.HTTP.Simple
-import           Options.Applicative
-import qualified Data.Vector                  as Partial
+
 
 import           Edgar.Common
 
@@ -84,8 +82,6 @@ indexSourceC Config{..} yq =
   where
     url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show (year yq) <> "/QTR" <> show (qtr yq) <> "/master.gz"
 
-
-
 dropHeaderC ∷ ConduitT ByteString ByteString UpdateM ()
 dropHeaderC = ignoreC 11
 
@@ -96,24 +92,25 @@ ignoreC i =
       Nothing → return ()
       Just _  → ignoreC (i-1)
 
-
 lazifyBSC ∷ ConduitT ByteString LByteString UpdateM ()
 lazifyBSC = C.awaitForever $ C.yield . toLazy
 
 toEdgarFormC ∷ (MonadIO m, MonadState FormCounter m) => ConduitT LByteString EdgarForm m ()
-toEdgarFormC = C.awaitForever $ \bs →
-    case toEdgarForm bs of
-      Left e   → do
-                  malformed += 1
-                  liftIO . putStrLn . decodeUtf8 $ "Error reading form: " <> bs
-      Right ef → C.yield ef
+toEdgarFormC = C.awaitForever yieldForm
+  where
+    yieldForm bs =
+       case toEdgarForm bs of
+         Left _   → do
+                     malformed += 1
+                     liftIO . BSL.putStrLn $ "Error reading form: " <> bs
+                     pure ()
+         Right ef → C.yield ef
+
+    toEdgarForm b =
+        Partial.head <$> decodeWith pipeDelimited NoHeader b
 
 storeFormC ∷ Connection → ConduitT EdgarForm o UpdateM ()
 storeFormC conn = C.awaitForever $ \ef → insertEdgarForm conn ef
-
-
-toEdgarForm ∷ LByteString → Either String EdgarForm
-toEdgarForm b = Partial.head <$> decodeWith pipeDelimited NoHeader b
 
 pipeDelimited ∷ DecodeOptions
 pipeDelimited =
@@ -170,3 +167,8 @@ data Config = Config
   , psql    ∷ !String
   }
 
+
+debug :: IO ()
+debug = updateDbWithIndex conf
+  where
+    conf = Config (yearQtr 2011 4) Nothing "postgresql://localhost/edgar"
