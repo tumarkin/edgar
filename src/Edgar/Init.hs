@@ -31,14 +31,14 @@ initQ ∷ Statement () ()
 initQ = Statement sql encoder decoder True
   where
     sql     = "create table forms (" <>
-      "  id             serial primary key," <>
-      "  cik            integer," <>
-      "  company_name   text," <>
-      "  form_type      form_type," <>
-      "  date_filed     date," <>
-      "  filename       text," <>
-      "  unique (cik, company_name, form_type, date_filed, filename)" <>
-      "  )"
+              "  id             serial primary key," <>
+              "  cik            integer," <>
+              "  company_name   text," <>
+              "  form_type      form_type," <>
+              "  date_filed     date," <>
+              "  filename       text," <>
+              "  unique (cik, company_name, form_type, date_filed, filename)" <>
+              "  )"
     encoder = E.noParams
     decoder = D.noResult
 

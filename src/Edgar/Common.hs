@@ -32,7 +32,7 @@ import           System.FilePath                 as X
 
 import qualified Data.ByteString.Lazy.Char8      as L8
 import           Data.Char                       (isDigit)
-import           Data.Csv
+import           Data.Csv (FromRecord, ToRecord, FromField(..), ToField(..))
 import           GHC.Read
 import           Hasql.Connection
 import qualified Hasql.Encoders                  as E

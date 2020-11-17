@@ -44,6 +44,8 @@ library:
     - relude
     - resourcet
     - time
+    - text
+    - unliftio
     - vector
 
 executables:
