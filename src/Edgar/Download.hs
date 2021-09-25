@@ -32,7 +32,7 @@ download c@Config{..} = do
 
     let nToDownload = length forms'
 
-    putStrLn $ "Not downloaded: " <> show nToDownload
+    putStrLn $ "Not previously downloaded: " <> show nToDownload
     runConcurrent concurrentDLs (downloadAndSaveForm conn dir) forms'
 
 downloadAndSaveForm ∷ Connection → FilePath → Text → IO ()

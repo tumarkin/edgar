@@ -5,6 +5,7 @@ module Edgar.Update
   where
 
 import           Control.Monad.Trans.Resource
+import qualified Data.ByteString.Char8        as BS
 import qualified Data.ByteString.Lazy.Char8   as BSL
 import           Data.Conduit                 (ConduitT, (.|))
 import qualified Data.Conduit                 as C
@@ -78,9 +79,12 @@ myConduit c@Config{..} conn yq
 
 indexSourceC ∷ Config → YearQtr → ConduitT i ByteString UpdateM ()
 indexSourceC Config{..} yq =
-    httpSource url getResponseBody
+    httpSource url' getResponseBody
   where
     url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show (year yq) <> "/QTR" <> show (qtr yq) <> "/master.gz"
+    url' = addRequestHeader "user-agent" (BS.pack emailAddress) url
+    -- url' = ur
+
 
 dropHeaderC ∷ ConduitT ByteString ByteString UpdateM ()
 dropHeaderC = ignoreC 11
@@ -99,7 +103,7 @@ toEdgarFormC ∷ (MonadIO m, MonadState FormCounter m) => ConduitT LByteString E
 toEdgarFormC = C.awaitForever yieldForm
   where
     yieldForm bs =
-       case toEdgarForm bs of
+       case toEdgarForm (stripQuotes bs) of
          Left _   → do
                      malformed += 1
                      liftIO . BSL.putStrLn $ "Error reading form: " <> bs
@@ -108,6 +112,8 @@ toEdgarFormC = C.awaitForever yieldForm
 
     toEdgarForm b =
         Partial.head <$> decodeWith pipeDelimited NoHeader b
+
+    stripQuotes = BSL.filter (/= '\"')
 
 storeFormC ∷ Connection → ConduitT EdgarForm o UpdateM ()
 storeFormC conn = C.awaitForever $ \ef → insertEdgarForm conn ef
@@ -162,13 +168,14 @@ formTypeQ t = Statement sql encoder decoder True
 -- Config and CLI                                                             --
 --------------------------------------------------------------------------------
 data Config = Config
-  { startYq ∷ !YearQtr
-  , endYq   ∷ !(Maybe YearQtr)
-  , psql    ∷ !String
+  { startYq      ∷ !YearQtr
+  , endYq        ∷ !(Maybe YearQtr)
+  , psql         ∷ !String
+  , emailAddress ∷ !String
   }
 
 
-debug :: IO ()
+debug ∷ IO ()
 debug = updateDbWithIndex conf
   where
-    conf = Config (yearQtr 2011 4) Nothing "postgresql://localhost/edgar"
+    conf = Config (yearQtr 2011 4) Nothing "postgresql://localhost/edgar" "test_email@domainname.com"
