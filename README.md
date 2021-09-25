@@ -63,7 +63,7 @@ download --help`.
 
 # Revision history
 
-* 0.1.1.0: 
+* _0.1.1.0_
     - Edgar's `Update` subcommand updated due to changes to the SEC
     website. The program was receiving "throttling" errors from the
     SEC because it was not providing an email address as part of the
