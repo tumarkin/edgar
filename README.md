@@ -26,7 +26,7 @@ Edgar to download data efficiently.
     it handles parallel installation of dependencies. Just run `stack install` 
     again and it will pick up where it left off.
 
-2. Install postgres and create a database to hold your form index, e.g., `create database edgar;`.
+2. Install postgres and create a database to hold your form index, e.g., `create database edgar`.
 
 3. On the command line type `edgar init`. You will need to specify a path if you
 did not use the default database name (i.e. *edgar*). See getting help below.
