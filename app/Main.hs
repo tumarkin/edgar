@@ -37,6 +37,7 @@ main = do
       Update c   → Update.updateDbWithIndex c
       Download c → Download.download c
 
+
 --------------------------------------------------------------------------------
 -- Command Parsers                                                            --
 --------------------------------------------------------------------------------
@@ -48,6 +49,7 @@ updateConf = Update.Config
     <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
     <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
     <*> postgres
+    <*> strOption (metavar "EMAIL" <> long "email" <> short 'e' <> help "User email address (required by Edgar)")
 
 downloadQueryMode = downloadConfig queryMode
 downloadIdMode    = downloadConfig idMode

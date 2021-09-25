@@ -5,6 +5,7 @@ module Edgar.Update
   where
 
 import           Control.Monad.Trans.Resource
+import qualified Data.ByteString.Char8        as BS
 import qualified Data.ByteString.Lazy.Char8   as BSL
 import           Data.Conduit                 (ConduitT, (.|))
 import qualified Data.Conduit                 as C
@@ -78,9 +79,12 @@ myConduit c@Config{..} conn yq
 
 indexSourceC ∷ Config → YearQtr → ConduitT i ByteString UpdateM ()
 indexSourceC Config{..} yq =
-    httpSource url getResponseBody
+    httpSource url' getResponseBody
   where
     url = parseRequest_ $ "https://www.sec.gov/Archives/edgar/full-index/" <> show (year yq) <> "/QTR" <> show (qtr yq) <> "/master.gz"
+    url' = addRequestHeader "user-agent" (BS.pack emailAddress) url
+    -- url' = ur
+
 
 dropHeaderC ∷ ConduitT ByteString ByteString UpdateM ()
 dropHeaderC = ignoreC 11
@@ -162,13 +166,14 @@ formTypeQ t = Statement sql encoder decoder True
 -- Config and CLI                                                             --
 --------------------------------------------------------------------------------
 data Config = Config
-  { startYq ∷ !YearQtr
-  , endYq   ∷ !(Maybe YearQtr)
-  , psql    ∷ !String
+  { startYq      ∷ !YearQtr
+  , endYq        ∷ !(Maybe YearQtr)
+  , psql         ∷ !String
+  , emailAddress ∷ !String
   }
 
 
-debug :: IO ()
+debug ∷ IO ()
 debug = updateDbWithIndex conf
   where
-    conf = Config (yearQtr 2011 4) Nothing "postgresql://localhost/edgar"
+    conf = Config (yearQtr 2011 4) Nothing "postgresql://localhost/edgar" "test_email@domainname.com"
