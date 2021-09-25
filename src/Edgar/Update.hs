@@ -103,7 +103,7 @@ toEdgarFormC ∷ (MonadIO m, MonadState FormCounter m) => ConduitT LByteString E
 toEdgarFormC = C.awaitForever yieldForm
   where
     yieldForm bs =
-       case toEdgarForm bs of
+       case toEdgarForm (stripQuotes bs) of
          Left _   → do
                      malformed += 1
                      liftIO . BSL.putStrLn $ "Error reading form: " <> bs
@@ -112,6 +112,8 @@ toEdgarFormC = C.awaitForever yieldForm
 
     toEdgarForm b =
         Partial.head <$> decodeWith pipeDelimited NoHeader b
+
+    stripQuotes = BSL.filter (/= '\"')
 
 storeFormC ∷ Connection → ConduitT EdgarForm o UpdateM ()
 storeFormC conn = C.awaitForever $ \ef → insertEdgarForm conn ef

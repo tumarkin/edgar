@@ -42,12 +42,18 @@ import qualified Text.ParserCombinators.ReadP    as RP
 import qualified Text.ParserCombinators.ReadPrec as RP
 
 
+--------------------------------------------------------------------------------
+-- DB Connection                                                              --
+--------------------------------------------------------------------------------
 connectTo ∷ ByteString → IO Connection
 connectTo b = acquire b >>= \case
-    Left e  → error "Unable to connect to database"
+    Left e  → error $ "Unable to connect to database to create tables and types. Ensure the named database (default: edgar) exists."
     Right c → return c
 
 
+--------------------------------------------------------------------------------
+-- EdgarForm                                                                  --
+--------------------------------------------------------------------------------
 data EdgarForm = EdgarForm
   { cik         ∷ !Int64
   , companyName ∷ !Text
@@ -72,10 +78,9 @@ encodeEdgarForm
    <> contramap dateFiled (E.param $ E.nonNullable E.date)
    <> contramap filename (E.param $ E.nonNullable E.text)
 
-textOption ∷ Opt.Mod Opt.OptionFields String → Opt.Parser Text
-textOption ms = toText <$> Opt.strOption ms
-
-
+--------------------------------------------------------------------------------
+-- YearQtr                                                                    --
+--------------------------------------------------------------------------------
 data YearQtr = YearQtr
   { year ∷ !Int
   , qtr  ∷ !Int
@@ -105,7 +110,6 @@ parseYq' = do
     q <- digit
     return $ yearQtr (read y) (read $ q : "")
 
-
 readYqP ∷ RP.ReadP YearQtr
 readYqP = do
     y <- RP.count 4 $ RP.satisfy isDigit
@@ -120,4 +124,10 @@ instance Enum YearQtr where
       where
         m = mod i 4 + 1
         y = quot i 4
+
+--------------------------------------------------------------------------------
+-- Optparse utility functions                                                          --
+--------------------------------------------------------------------------------
+textOption ∷ Opt.Mod Opt.OptionFields String → Opt.Parser Text
+textOption ms = toText <$> Opt.strOption ms
 

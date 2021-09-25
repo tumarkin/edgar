@@ -63,5 +63,12 @@ download --help`.
 
 # Revision history
 
-* 0.1.1.0: Update command (insert forms into the Postgres index) supports
-specifying the user's email address, which is required by the SEC.
+* 0.1.1.0: 
+    - Edgar's `Update` subcommand updated due to changes to the SEC
+    website. The program was receiving "throttling" errors from the
+    SEC because it was not providing an email address as part of the
+    user agent in HTML requests. The subcommand now requires an
+    email address.
+    - Minor bug fix to strip quotation marks from company names,
+    which were not compatible with Postgres without escaping.
+
