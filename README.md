@@ -68,7 +68,7 @@ download --help`.
     website. The program was receiving "throttling" errors from the
     SEC because it was not providing an email address as part of the
     user agent in HTML requests. The subcommand now requires an
-    email address.
+    email "address".
     - Minor bug fix to strip quotation marks from company names,
     which were not compatible with Postgres without escaping.
 
