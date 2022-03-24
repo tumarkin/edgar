@@ -22,11 +22,11 @@ enabling _edgar_ to download data efficiently.
 
     c. CD to the local repository directory and type `stack install`.
 
-    d. On occassion, `stack` may temporarily fail on the install due to the way
+    d. On occasion, `stack` may temporarily fail on the install due to the way
     it handles parallel installation of dependencies. Just run `stack install` 
     again and it will pick up where it left off.
 
-2. Install postgres and create a database to hold your form index, e.g., `create database edgar`.
+2. Install Postgres and create a database to hold your form index, e.g., `create database edgar`.
 
 3. On the command line type `edgar init`. You will need to specify a path if you
 did not use the default database name (i.e. *edgar*). See getting help below.
@@ -37,7 +37,7 @@ The form index is housed in Postgres. _edgar_ will keep your index up to date.
 Each quarter, simply type `edgar update START END`. *START* and *END* are
 year-quarters, each specified as YYYYqQ. For example, 1999 quarter 2 is as
 *1999q2*. _edgar_ maintains unique indexes and will not duplicate forms should
-you run the update command mulitple times on the same year-quarter.
+you run the update command multiple times on the same year-quarter.
 
 
 ## Downloading forms
@@ -51,7 +51,7 @@ type, start date, and end date. For multiple possible CIKs, company names, or
 form types, simply specify multiple option arguments.
 
 2. **ID**: Type `edgar download id ID1 ID2 ...` where *IDX* is the internal id
-identifier from the forms table in the edgar postgres database.
+identifier from the forms table in the edgar Postgres database.
 
 _edgar_ supports simultaneous downloads (default is 4). See --help.
 
@@ -73,7 +73,7 @@ endeavor to fix it.
 
 * _0.1.1.1_
     - Edgar's `download` subcommand updated due to changes to the SEC
-    website. Previously only the index files were throttled, afftecting
+    website. Previously only the index files were throttled, affecting
     the `update` subcommand. Now, forms are throttled, necessitating
     that the user provide an email address as part of the
     user agent in HTML requests. This subcommand now requires an
