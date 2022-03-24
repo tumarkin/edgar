@@ -49,7 +49,7 @@ updateConf = Update.Config
     <$> argument auto (metavar "START"<> help "Start year quarter specified as YYYYqQ (e.g. 1999q1)")
     <*> optional (argument auto (metavar "END" <> help "End year quarter specified as YYYYqQ (OPTIONAL - Downloads only START when omitted)"))
     <*> postgres
-    <*> strOption (metavar "EMAIL" <> long "email" <> short 'e' <> help "User email address (required by Edgar)")
+    <*> userEmail
 
 downloadQueryMode = downloadConfig queryMode
 downloadIdMode    = downloadConfig idMode
@@ -67,6 +67,7 @@ downloadConfig modeParser = Download.Config
     <*> postgres
     <*> option   auto (short 'd' <> long "directory"            <> value "." <> showDefault <> help "Archive root directory")
     <*> option   auto (short 'n' <> long "concurrent-downloads" <> value 4   <> showDefault <> help "Number of concurrent downloads")
+    <*> userEmail
 
 
 conditions ∷ Parser Download.Conditions
@@ -77,6 +78,9 @@ conditions = Download.Conditions
     <*> optional (option auto (short 's' <> long "start" <> metavar "DATE" <> help "Start date (YYYY-MM-DD)"))
     <*> optional (option auto (short 'e' <> long "end" <> metavar "DATE" <> help "End date (YYYY-MM-DD)"))
 
+
+userEmail :: Parser String
+userEmail = strOption (metavar "EMAIL" <> long "email" <> short 'e' <> help "User email address (required by Edgar)")
 
 --------------------------------------------------------------------------------
 -- Individual option  parsers                                                 --

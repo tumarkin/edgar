@@ -6,9 +6,10 @@ module Edgar.Download
   )
   where
 
-import           Conduit             (MonadThrow)
-import qualified Hasql.Decoders      as D
-import qualified Hasql.Encoders      as E
+import           Conduit               (MonadThrow)
+import qualified Data.ByteString.Char8 as BS
+import qualified Hasql.Decoders        as D
+import qualified Hasql.Encoders        as E
 import           Hasql.Session
 import           Hasql.Statement
 import           Network.HTTP.Simple
@@ -33,11 +34,11 @@ download c@Config{..} = do
     let nToDownload = length forms'
 
     putStrLn $ "Not previously downloaded: " <> show nToDownload
-    runConcurrent concurrentDLs (downloadAndSaveForm conn dir) forms'
+    runConcurrent concurrentDLs (downloadAndSaveForm conn dir emailAddress) forms'
 
-downloadAndSaveForm ∷ Connection → FilePath → Text → IO ()
-downloadAndSaveForm conn basedir ffn = do
-    source <- downloadUrl $ "https://www.sec.gov/Archives/" <> ffn
+downloadAndSaveForm ∷ Connection → FilePath → String → Text → IO ()
+downloadAndSaveForm conn basedir email ffn = do
+    source <- downloadUrl ("https://www.sec.gov/Archives/" <> ffn) email
     createDirectoryIfMissing True $ dropFileName localPath
     writeFileLBS localPath source
   where
@@ -49,9 +50,9 @@ notDownloaded basedir ffn = not <$> doesFileExist (basedir </> toString ffn)
 --------------------------------------------------------------------------------
 -- Database functions                                                         --
 --------------------------------------------------------------------------------
-downloadUrl ∷ (MonadIO m, MonadThrow m) => Text → m LByteString
-downloadUrl url =
-    getResponseBody <$> (httpLBS =<< parseRequest (toString url))
+downloadUrl ∷ (MonadIO m, MonadThrow m) => Text → String → m LByteString
+downloadUrl url email =
+    getResponseBody <$> (httpLBS . addRequestHeader "user-agent" (BS.pack email)  =<< parseRequest (toString url))
 
 formFilename ∷ Connection → Int64 → IO Text
 formFilename conn i = run (statement i formFilenameQ) conn >>= \case
@@ -116,6 +117,7 @@ data Config = Config
   , psql          ∷ !String
   , dir           ∷ !FilePath
   , concurrentDLs ∷ !Int
+  , emailAddress  ∷ !String
   }
 
 data Mode

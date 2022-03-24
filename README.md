@@ -5,16 +5,16 @@ database.
 
 ## Features
 
-Edgar builds a local Postgres database of forms on Edgar and then allows you
-to download forms using queries based on any combination of CIK, company name,
-form type (e.g. 10-K), start date, and end date. It is also possible to download
-forms by the internal identifier in the database. `edgar --help` provides
-information on all commands/sub-commands. Downloads are run in parallel enabling
-Edgar to download data efficiently.
+_edgar_ builds a local Postgres database of forms on SEC Edgar and then allows
+you to download forms using queries based on any combination of CIK, company
+name, form type (e.g. 10-K), start date, and end date. It is also possible
+to download forms by the internal identifier in the database. `edgar --help`
+provides information on all commands/sub-commands. Downloads are run in parallel
+enabling _edgar_ to download data efficiently.
 
 ## Installation
 
-1. Edgar application
+1. _edgar_ application
 
     a. Download and install [Haskell Stack](https://www.stackage.org).
 
@@ -33,10 +33,11 @@ did not use the default database name (i.e. *edgar*). See getting help below.
 
 ## Creating and updating your form index
 
-The form index is housed in Postgres. *edgar* will keep your index up to date.
+The form index is housed in Postgres. _edgar_ will keep your index up to date.
 Each quarter, simply type `edgar update START END`. *START* and *END* are
 year-quarters, each specified as YYYYqQ. For example, 1999 quarter 2 is as
-*1999q2*.
+*1999q2*. _edgar_ maintains unique indexes and will not duplicate forms should
+you run the update command mulitple times on the same year-quarter.
 
 
 ## Downloading forms
@@ -52,7 +53,7 @@ form types, simply specify multiple option arguments.
 2. **ID**: Type `edgar download id ID1 ID2 ...` where *IDX* is the internal id
 identifier from the forms table in the edgar postgres database.
 
-*edgar* supports simultaneous downloads (default is 4). See --help.
+_edgar_ supports simultaneous downloads (default is 4). See --help.
 
 
 ## Getting help
@@ -62,6 +63,14 @@ individualized help. For example, to get help on downloading, type `edgar
 download --help`.
 
 # Revision history
+
+* _0.1.1.1_
+    - Edgar's `download` subcommand updated due to changes to the SEC
+    website. Previously only the index files were throttled, afftecting
+    the `update` subcommand. Now forms are throttled, necessitating
+    that the user provide an email address as part of the
+    user agent in HTML requests. This subcommand now requires an
+    email "address".
 
 * _0.1.1.0_
     - Edgar's `Update` subcommand updated due to changes to the SEC
