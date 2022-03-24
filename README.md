@@ -62,12 +62,19 @@ _edgar_ supports simultaneous downloads (default is 4). See --help.
 individualized help. For example, to get help on downloading, type `edgar
 download --help`.
 
+## Development status
+
+_edgar_ is under active development. However, I may not notice issues
+arising from changes to the SEC website immediately, as I access data
+intermittently. Should an issue arise, please post an Issue and I will
+endeavor to fix it.
+
 # Revision history
 
 * _0.1.1.1_
     - Edgar's `download` subcommand updated due to changes to the SEC
     website. Previously only the index files were throttled, afftecting
-    the `update` subcommand. Now forms are throttled, necessitating
+    the `update` subcommand. Now, forms are throttled, necessitating
     that the user provide an email address as part of the
     user agent in HTML requests. This subcommand now requires an
     email "address".
