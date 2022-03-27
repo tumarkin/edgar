@@ -1,10 +1,10 @@
 name:                edgar
-version:             0.1.1.1
+version:             0.1.1.2
 github:              "tumarkin/edgar"
 license:             BSD3
 author:              "Robert Tumarkin"
 maintainer:          "r.tumarkin@unsw.edu.au"
-copyright:           "2020 Robert Tumarkin"
+copyright:           "2022 Robert Tumarkin"
 
 extra-source-files:
 - README.md

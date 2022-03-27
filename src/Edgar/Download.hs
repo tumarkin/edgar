@@ -27,13 +27,18 @@ download c@Config{..} = do
       QueryMode conditions →  getQueryQueue conn conditions
       IdMode    x          →  mapM (formFilename conn) x
 
+
     putStrLn $ "Requested forms: " <> show (length forms)
 
-    forms' <- filterM (notDownloaded dir) forms
+    -- Filter and limit requested forms
+    let extensions = Nothing : map Just zipExtensions
+        limitF     = maybe id take limit
+
+    forms' <- limitF <$> filterM (notDownloaded dir extensions) forms
 
     let nToDownload = length forms'
 
-    putStrLn $ "Not previously downloaded: " <> show nToDownload
+    putStrLn $ "To download: " <> show nToDownload
     runConcurrent concurrentDLs (downloadAndSaveForm conn dir emailAddress) forms'
 
 downloadAndSaveForm ∷ Connection → FilePath → String → Text → IO ()
@@ -44,8 +49,15 @@ downloadAndSaveForm conn basedir email ffn = do
   where
     localPath = basedir </> toString ffn
 
-notDownloaded ∷ FilePath → Text → IO Bool
-notDownloaded basedir ffn = not <$> doesFileExist (basedir </> toString ffn)
+-- notDownloaded ∷ FilePath → Text → IO Bool
+-- notDownloaded basedir ffn = not <$> doesFileExist (basedir </> toString ffn)
+
+notDownloaded ∷ FilePath → [Maybe FilePath] → Text → IO Bool
+notDownloaded basedir exts ffn = not <$> anyM (downloaded basedir ffn) exts
+
+downloaded ∷ FilePath → Text → Maybe FilePath → IO Bool
+downloaded basedir ffn Nothing    = doesFileExist $ basedir </> toString ffn
+downloaded basedir ffn (Just ext) = doesFileExist $ basedir </> toString ffn <.> ext
 
 --------------------------------------------------------------------------------
 -- Database functions                                                         --
@@ -118,6 +130,8 @@ data Config = Config
   , dir           ∷ !FilePath
   , concurrentDLs ∷ !Int
   , emailAddress  ∷ !String
+  , zipExtensions ∷ ![FilePath]
+  , limit         ∷ !(Maybe Int)
   }
 
 data Mode

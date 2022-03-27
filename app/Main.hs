@@ -68,6 +68,8 @@ downloadConfig modeParser = Download.Config
     <*> option   auto (short 'd' <> long "directory"            <> value "." <> showDefault <> help "Archive root directory")
     <*> option   auto (short 'n' <> long "concurrent-downloads" <> value 4   <> showDefault <> help "Number of concurrent downloads")
     <*> userEmail
+    <*> many     (strOption   (short 'z' <> long "zip-extension" <> metavar "EXT" <> help "Extensions of zipped files in archive"))
+    <*> optional (option auto (short 'l' <> long "limit"                 <> metavar "INT" <> help "Limit to N forms"))
 
 
 conditions ∷ Parser Download.Conditions

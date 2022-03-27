@@ -71,6 +71,14 @@ endeavor to fix it.
 
 # Revision history
 
+* _0.1.1.2_
+    - `download` subcommand now recognizes already downloaded forms
+    that are stored compressed. Use the `--zip-extension` option to specify
+    the appropriate compressed extension, e.g., `--zip-extension=zst`.
+    - `download` subcommand may be limited to a specific number
+    of forms using `--limit` option. This may be useful when downloaded
+    a large number of forms by switching to a loop over a smaller number.
+ 
 * _0.1.1.1_
     - Edgar's `download` subcommand updated due to changes to the SEC
     website. Previously only the index files were throttled, affecting
