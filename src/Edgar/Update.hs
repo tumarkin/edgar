@@ -49,7 +49,7 @@ type Quarter = Int
 --------------------------------------------------------------------------------
 updateDbWithIndex ∷ Config → IO ()
 updateDbWithIndex c@Config{..} =  do
-    conn <- connectTo $ encodeUtf8 psql
+    conn <- connectTo psql
     Edgar.Common.mapM_ (updateDbYearQtr c conn) [startYq..fromMaybe startYq endYq]
 
 
@@ -139,13 +139,13 @@ insertQ = Statement sql encodeEdgarForm D.noResult True
   where
     sql     = "insert into forms (cik, company_name, form_type, date_filed, filename) values ($1, $2, $3::form_type, $4, $5)"
 
-isDuplicateError ∷ QueryError → Bool
-isDuplicateError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ ))) = "duplicate key value" `isPrefixOf` msg
+isDuplicateError ∷ SessionError → Bool
+isDuplicateError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ _ ))) = "duplicate key value" `isPrefixOf` msg
   where msg = decodeUtf8 msgBs
 isDuplicateError _ = False
 
-isEnumError ∷ QueryError → Bool
-isEnumError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ ))) = "invalid input value for enum" `isPrefixOf` msg
+isEnumError ∷ SessionError → Bool
+isEnumError (QueryError _ _ (ResultError (ServerError _ msgBs _ _ _))) = "invalid input value for enum" `isPrefixOf` msg
   where msg = decodeUtf8 msgBs
 isEnumError _ = False
 

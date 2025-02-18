@@ -1,5 +1,5 @@
 name:                edgar
-version:             0.1.1.2
+version:             0.1.1.3
 github:              "tumarkin/edgar"
 license:             BSD3
 author:              "Robert Tumarkin"
@@ -19,7 +19,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/tumarkin/edgar#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.20 && < 5
 
 library:
   source-dirs: src
@@ -31,7 +31,7 @@ library:
     - conduit-extra
     - directory
     - filepath
-    - hasql
+    - hasql >= 1.9 && < 2.0
     - http-conduit
     - parsec
     - microlens-mtl

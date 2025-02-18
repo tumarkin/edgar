@@ -34,19 +34,23 @@ import           Data.Char                       (isDigit)
 import           Data.Csv (FromRecord, ToRecord, FromField(..), ToField(..))
 import           GHC.Read
 import           Hasql.Connection
+import           Hasql.Connection.Setting
+import qualified Hasql.Connection.Setting.Connection as Conn
 import qualified Hasql.Encoders                  as E
 import qualified Options.Applicative             as Opt
 import           Prelude                         (read)
 import           Text.ParserCombinators.Parsec   hiding ((<|>))
 import qualified Text.ParserCombinators.ReadP    as RP
 import qualified Text.ParserCombinators.ReadPrec as RP
+import qualified Data.Text as T
 
 
 --------------------------------------------------------------------------------
 -- DB Connection                                                              --
 --------------------------------------------------------------------------------
-connectTo ∷ ByteString → IO Connection
-connectTo b = acquire b >>= \case
+connectTo ∷ String → IO Connection
+connectTo psql = 
+  acquire [connection . Conn.string . T.pack $ psql] >>= \case
     Left e  → error $ "Unable to connect to database to create tables and types. Ensure the named database (default: edgar) exists."
     Right c → return c
 

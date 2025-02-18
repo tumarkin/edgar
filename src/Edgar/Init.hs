@@ -14,7 +14,7 @@ import           Edgar.Common
 
 initDb ∷ Config → IO ()
 initDb Config{..} = do
-  c <- connectTo $ encodeUtf8 psql
+  c <- connectTo psql
   run (statement () formTypeQ) c >>= \case
     Left e  → error $ show e
     Right _ → putStrLn "Enumerated form type created."

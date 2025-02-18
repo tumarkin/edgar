@@ -20,7 +20,7 @@ import           Edgar.Concurrent
 
 download ∷ Config → IO ()
 download c@Config{..} = do
-    conn <- connectTo $ encodeUtf8 psql
+    conn <- connectTo psql
 
     -- Get form filepaths
     forms <- case mode of
